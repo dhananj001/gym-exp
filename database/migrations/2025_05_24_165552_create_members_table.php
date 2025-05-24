@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('members', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('membership_type'); // e.g., Monthly, Yearly
+            $table->date('start_date');
+            $table->date('expiry_date');
             $table->timestamps();
         });
     }

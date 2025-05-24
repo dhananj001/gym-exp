@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MembersController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -11,7 +12,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+
+    Route::get('/members', [MembersController::class, 'index'])->name('members');
+
+    Route::post('/api/members', [MembersController::class, 'store']);
 });
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
