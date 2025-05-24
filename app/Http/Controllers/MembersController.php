@@ -2,120 +2,125 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMemberRequest;
+use App\Http\Requests\UpdateMemberRequest;
 use App\Models\Member;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Trainer;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
 class MembersController extends Controller
 {
     /**
-     * Display the Members page with a list of all members.
-     * Passes member data and flash messages to the Members.tsx frontend.
+     * Display the Members page with a list of all members and trainers.
      */
     public function index()
     {
         return Inertia::render('Members', [
-            'members' => Member::all(), // Fetches all members from the database
-            'flash' => session('flash', []), // Passes success/error messages from redirects
+            'members' => Member::with('trainer')->get()->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'gender' => $member->gender,
+                    'dob' => $member->dob,
+                    'contact_number' => $member->contact_number,
+                    'address' => $member->address,
+                    'membership_plan' => $member->membership_plan,
+                    'membership_type' => $member->membership_type,
+                    'trainer_id' => $member->trainer_id,
+                    'trainer_name' => $member->trainer?->name,
+                    'start_date' => $member->start_date,
+                    'expiry_date' => $member->expiry_date,
+                    'payable_amount' => $member->payable_amount,
+                    'payment_mode' => $member->payment_mode,
+                    'payment_status' => $member->payment_status,
+                ];
+            }),
+            'trainers' => Trainer::all()->map(function ($trainer) {
+                return ['id' => $trainer->id, 'name' => $trainer->name];
+            }),
+            'flash' => session('flash', []),
         ]);
     }
 
     /**
      * Store a new member in the database.
-     * Validates input, auto-calculates expiry date for non-custom types, and redirects.
      */
-    public function store(Request $request)
+    public function store(StoreMemberRequest $request)
     {
-        // Validate input data
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:members,email',
-            'membership_type' => 'required|in:1_month,3_months,6_months,1_year,custom',
-            'start_date' => 'required|date',
-            'expiry_date' => 'required|date|after:start_date',
-        ]);
-
-        // If validation fails, redirect back with errors and input
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        // Get all request data
-        $data = $request->all();
+        $data = $request->validated();
 
         // Auto-calculate expiry date for non-custom membership types
         if ($data['membership_type'] !== 'custom') {
             $startDate = Carbon::parse($data['start_date']);
             $data['expiry_date'] = match ($data['membership_type']) {
-                '1_month' => $startDate->addMonth(),
-                '3_months' => $startDate->addMonths(3),
-                '6_months' => $startDate->addMonths(6),
-                '1_year' => $startDate->addYear(),
+                '1_month' => $startDate->copy()->addMonth(),
+                '3_months' => $startDate->copy()->addMonths(3),
+                '6_months' => $startDate->copy()->addMonths(6),
+                '1_year' => $startDate->copy()->addYear(),
                 default => $data['expiry_date'],
             };
         }
 
-        // Create the member record
+        // Calculate payable amount
+        $months = match ($data['membership_type']) {
+            '1_month' => 1,
+            '3_months' => 3,
+            '6_months' => 6,
+            '1_year' => 12,
+            'custom' => Carbon::parse($data['expiry_date'])->diffInMonths(Carbon::parse($data['start_date'])) ?: 1,
+        };
+        $basePrice = $data['membership_plan'] === 'cardio' ? 50 : 75;
+        $data['payable_amount'] = $basePrice * $months;
+
         Member::create($data);
 
-        // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member added successfully');
+        return redirect()->route('members')->with('flash.success', 'Member added successfully');
     }
 
     /**
      * Update an existing member's details.
-     * Validates input, auto-calculates expiry date for non-custom types, and redirects.
      */
-    public function update(Request $request, Member $member)
+    public function update(UpdateMemberRequest $request, Member $member)
     {
-        // Validate input data, allowing the same email for the current member
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:members,email,' . $member->id,
-            'membership_type' => 'required|in:1_month,3_months,6_months,1_year,custom',
-            'start_date' => 'required|date',
-            'expiry_date' => 'required|date|after:start_date',
-        ]);
-
-        // If validation fails, redirect back with errors and input
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        // Get all request data
-        $data = $request->all();
+        $data = $request->validated();
 
         // Auto-calculate expiry date for non-custom membership types
         if ($data['membership_type'] !== 'custom') {
             $startDate = Carbon::parse($data['start_date']);
             $data['expiry_date'] = match ($data['membership_type']) {
-                '1_month' => $startDate->addMonth(),
-                '3_months' => $startDate->addMonths(3),
-                '6_months' => $startDate->addMonths(6),
-                '1_year' => $startDate->addYear(),
+                '1_month' => $startDate->copy()->addMonth(),
+                '3_months' => $startDate->copy()->addMonths(3),
+                '6_months' => $startDate->copy()->addMonths(6),
+                '1_year' => $startDate->copy()->addYear(),
                 default => $data['expiry_date'],
             };
         }
 
-        // Update the member record
+        // Calculate payable amount
+        $months = match ($data['membership_type']) {
+            '1_month' => 1,
+            '3_months' => 3,
+            '6_months' => 6,
+            '1_year' => 12,
+            'custom' => Carbon::parse($data['expiry_date'])->diffInMonths(Carbon::parse($data['start_date'])) ?: 1,
+        };
+        $basePrice = $data['membership_plan'] === 'cardio' ? 50 : 75;
+        $data['payable_amount'] = $basePrice * $months;
+
         $member->update($data);
 
-        // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member updated successfully');
+        return redirect()->route('members')->with('flash.success', 'Member updated successfully');
     }
 
     /**
      * Delete a member from the database.
-     * Removes the member and redirects with a success message.
      */
     public function destroy(Member $member)
     {
-        // Delete the member record
         $member->delete();
 
-        // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member deleted successfully');
+        return redirect()->route('members')->with('flash.success', 'Member deleted successfully');
     }
 }

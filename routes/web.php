@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MembersController;
+use App\Http\Controllers\TrainersController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -19,6 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::put('/api/members/{member}', [MembersController::class, 'update']);
     Route::delete('/api/members/{member}', [MembersController::class, 'destroy']);
+
+    Route::get('/trainers', [TrainersController::class, 'index'])->name('trainers.index');
 
 });
 
