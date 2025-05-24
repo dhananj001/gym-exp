@@ -16,6 +16,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/members', [MembersController::class, 'index'])->name('members');
 
     Route::post('/api/members', [MembersController::class, 'store']);
+
+    Route::put('/api/members/{member}', [MembersController::class, 'update']);
+    Route::delete('/api/members/{member}', [MembersController::class, 'destroy']);
+
 });
 
 
