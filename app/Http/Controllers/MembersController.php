@@ -19,21 +19,31 @@ class MembersController extends Controller
     {
         $today = Carbon::today();
 
-        // Monthly trend: Count new members per month for the current year
+        // Monthly trend: New members per month for the current year
         $monthlyTrend = Member::selectRaw('MONTHNAME(created_at) as month, COUNT(*) as count')
             ->whereYear('created_at', $today->year)
             ->groupBy('month')
             ->orderByRaw('MONTH(created_at)')
             ->pluck('count', 'month')
             ->mapWithKeys(function ($count, $month) {
-                // Abbreviate month names to match frontend (e.g., "January" -> "Jan")
                 return [substr($month, 0, 3) => $count];
             })
             ->toArray();
-
-        // Ensure all months are included, even with zero counts
         $allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $monthlyTrend = array_merge(array_fill_keys($allMonths, 0), $monthlyTrend);
+
+        // Monthly revenue trend: Sum of membership_fee for paid members
+        $revenueTrend = Member::selectRaw('MONTHNAME(created_at) as month, SUM(membership_fee) as total')
+            ->where('payment_status', 'paid')
+            ->whereYear('created_at', $today->year)
+            ->groupBy('month')
+            ->orderByRaw('MONTH(created_at)')
+            ->pluck('total', 'month')
+            ->mapWithKeys(function ($total, $month) {
+                return [substr($month, 0, 3) => round((float)$total, 2)];
+            })
+            ->toArray();
+        $revenueTrend = array_merge(array_fill_keys($allMonths, 0), $revenueTrend);
 
         return Inertia::render('Dashboard', [
             'analytics' => [
@@ -44,16 +54,28 @@ class MembersController extends Controller
                 'membershipTypes' => Member::groupBy('membership_type')
                     ->selectRaw('membership_type, COUNT(*) as count')
                     ->pluck('count', 'membership_type')
+                    ->mapWithKeys(function ($count, $type) {
+                        return [match ($type) {
+                            '1_month' => '1 Month',
+                            '3_months' => '3 Months',
+                            '6_months' => '6 Months',
+                            '1_year' => '1 Year',
+                            'custom' => 'Custom',
+                            default => $type
+                        } => $count];
+                    })
                     ->toArray(),
                 'paymentStatuses' => Member::groupBy('payment_status')
                     ->selectRaw('payment_status, COUNT(*) as count')
                     ->pluck('count', 'payment_status')
+                    ->mapWithKeys(function ($count, $status) {
+                        return [ucfirst($status) => $count];
+                    })
                     ->toArray(),
                 'recentMembers' => Member::orderBy('created_at', 'desc')
                     ->take(5)
-                    ->get(['id', 'name', 'membership_type', 'start_date', 'expiry_date'])
+                    ->get(['id', 'name', 'membership_type', 'start_date', 'expiry_date', 'payment_status'])
                     ->map(function ($member) {
-                        // Ensure membership_type is formatted for display
                         $member->membership_type = match ($member->membership_type) {
                             '1_month' => '1 Month',
                             '3_months' => '3 Months',
@@ -65,6 +87,7 @@ class MembersController extends Controller
                         return $member;
                     }),
                 'monthlyTrend' => $monthlyTrend,
+                'revenueTrend' => $revenueTrend,
             ],
             'flash' => session('flash', []),
         ]);
