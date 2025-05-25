@@ -190,95 +190,295 @@ const Members: React.FC = () => {
                                 Add Member
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="w-full lg:!max-w-5xl">
                             <DialogHeader>
                                 <DialogTitle>Add New Member</DialogTitle>
                             </DialogHeader>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    {/* Name */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Name</label>
-                                        <Input
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                        <input
+                                            type="text"
                                             value={data.name}
-                                            onChange={(e) => setData('name', e.target.value)}
-                                            className="mt-1"
+                                            onChange={(e) => setData("name", e.target.value)}
                                             placeholder="John Doe"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
                                         />
-                                        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                                        {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name}</p>}
                                     </div>
+
+                                    {/* Email */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                                        <Input
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input
                                             type="email"
                                             value={data.email}
-                                            onChange={(e) => setData('email', e.target.value)}
-                                            className="mt-1"
+                                            onChange={(e) => setData("email", e.target.value)}
                                             placeholder="john@example.com"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
                                         />
-                                        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                                        {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
                                     </div>
+
+                                    {/* Phone Number */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Membership Type</label>
-                                        <Select
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            value={data.phone}
+                                            onChange={(e) => setData("phone", e.target.value)}
+                                            placeholder="9876543210"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        />
+                                        {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
+                                    </div>
+
+                                    {/* Membership Type */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Membership Type</label>
+                                        <select
                                             value={data.membership_type}
-                                            onValueChange={(value) =>
-                                                setData('membership_type', value as FormData['membership_type'])
-                                            }
+                                            onChange={(e) => setData("membership_type", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
                                         >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue placeholder="Select type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="1_month">1 Month</SelectItem>
-                                                <SelectItem value="3_months">3 Months</SelectItem>
-                                                <SelectItem value="6_months">6 Months</SelectItem>
-                                                <SelectItem value="1_year">1 Year</SelectItem>
-                                                <SelectItem value="custom">Custom</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                            <option value="" disabled>
+                                                Select type
+                                            </option>
+                                            <option value="1_month">1 Month</option>
+                                            <option value="3_months">3 Months</option>
+                                            <option value="6_months">6 Months</option>
+                                            <option value="1_year">1 Year</option>
+                                            <option value="custom">Custom</option>
+                                        </select>
                                         {errors.membership_type && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.membership_type}</p>
+                                            <p className="text-red-600 text-xs mt-1">{errors.membership_type}</p>
                                         )}
                                     </div>
+
+                                    {/* Start Date */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                                        <Input
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                        <input
                                             type="date"
                                             value={data.start_date}
-                                            onChange={(e) => setData('start_date', e.target.value)}
-                                            className="mt-1"
+                                            onChange={(e) => setData("start_date", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
                                         />
                                         {errors.start_date && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.start_date}</p>
+                                            <p className="text-red-600 text-xs mt-1">{errors.start_date}</p>
                                         )}
                                     </div>
+
+                                    {/* Expiry Date */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Expiry Date</label>
-                                        <Input
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                                        <input
                                             type="date"
                                             value={data.expiry_date}
-                                            onChange={(e) => setData('expiry_date', e.target.value)}
-                                            disabled={data.membership_type !== 'custom'}
-                                            className="mt-1"
+                                            onChange={(e) => setData("expiry_date", e.target.value)}
+                                            disabled={data.membership_type !== "custom"}
+                                            className={`w-full rounded-md border px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out ${data.membership_type !== "custom"
+                                                    ? "bg-gray-100 cursor-not-allowed border-gray-300"
+                                                    : "border-gray-300"
+                                                }`}
                                         />
                                         {errors.expiry_date && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.expiry_date}</p>
+                                            <p className="text-red-600 text-xs mt-1">{errors.expiry_date}</p>
                                         )}
                                     </div>
+
+                                    {/* Birthdate */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Birthdate</label>
+                                        <input
+                                            type="date"
+                                            value={data.birthdate}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setData("birthdate", val);
+                                                if (val) {
+                                                    const birthDate = new Date(val);
+                                                    const today = new Date();
+                                                    let age = today.getFullYear() - birthDate.getFullYear();
+                                                    const m = today.getMonth() - birthDate.getMonth();
+                                                    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                                        age--;
+                                                    }
+                                                    setData("age", age.toString());
+                                                } else {
+                                                    setData("age", "");
+                                                }
+                                            }}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        />
+                                        {errors.birthdate && <p className="text-red-600 text-xs mt-1">{errors.birthdate}</p>}
+                                    </div>
+
+                                    {/* Age (readonly) */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                                        <input
+                                            type="text"
+                                            value={data.age}
+                                            readOnly
+                                            className="w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                    {/* Gender */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                        <select
+                                            value={data.gender}
+                                            onChange={(e) => setData("gender", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        >
+                                            <option value="" disabled>
+                                                Select gender
+                                            </option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                        {errors.gender && <p className="text-red-600 text-xs mt-1">{errors.gender}</p>}
+                                    </div>
+
+                                    {/* Address (full width) */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                        <textarea
+                                            rows={2}
+                                            value={data.address}
+                                            onChange={(e) => setData("address", e.target.value)}
+                                            placeholder="Enter full address"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          resize-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        />
+                                        {errors.address && <p className="text-red-600 text-xs mt-1">{errors.address}</p>}
+                                    </div>
+
+                                    {/* Membership Fee */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Membership Fee (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={data.membership_fee}
+                                            onChange={(e) => setData("membership_fee", e.target.value)}
+                                            placeholder="5000"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        />
+                                        {errors.membership_fee && <p className="text-red-600 text-xs mt-1">{errors.membership_fee}</p>}
+                                    </div>
+
+                                    {/* Payment Status */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
+                                        <select
+                                            value={data.payment_status}
+                                            onChange={(e) => setData("payment_status", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        >
+                                            <option value="" disabled>
+                                                Select status
+                                            </option>
+                                            <option value="paid">Paid</option>
+                                            <option value="partial">Partial</option>
+                                            <option value="unpaid">Unpaid</option>
+                                        </select>
+                                        {errors.payment_status && <p className="text-red-600 text-xs mt-1">{errors.payment_status}</p>}
+                                    </div>
+
+                                    {/* Payment Method */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                                        <select
+                                            value={data.payment_method}
+                                            onChange={(e) => setData("payment_method", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        >
+                                            <option value="" disabled>
+                                                Select method
+                                            </option>
+                                            <option value="cash">Cash</option>
+                                            <option value="card">Card</option>
+                                            <option value="upi">UPI</option>
+                                            <option value="netbanking">Net Banking</option>
+                                        </select>
+                                        {errors.payment_method && <p className="text-red-600 text-xs mt-1">{errors.payment_method}</p>}
+                                    </div>
+
+                                    {/* Workout Time Slot */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Workout Time Slot</label>
+                                        <select
+                                            value={data.workout_time_slot}
+                                            onChange={(e) => setData("workout_time_slot", e.target.value)}
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition duration-150 ease-in-out"
+                                        >
+                                            <option value="" disabled>
+                                                Select slot
+                                            </option>
+                                            <option value="6am-8am">6 AM - 8 AM</option>
+                                            <option value="8am-10am">8 AM - 10 AM</option>
+                                            <option value="10am-12pm">10 AM - 12 PM</option>
+                                            <option value="4pm-6pm">4 PM - 6 PM</option>
+                                            <option value="6pm-8pm">6 PM - 8 PM</option>
+                                        </select>
+                                        {errors.workout_time_slot && <p className="text-red-600 text-xs mt-1">{errors.workout_time_slot}</p>}
+                                    </div>
                                 </div>
-                                <div className="flex justify-end gap-2">
-                                    <Button
+
+                                {/* Buttons */}
+                                <div className="flex justify-end gap-3">
+                                    <button
                                         type="button"
-                                        variant="outline"
                                         onClick={() => setIsAddDialogOpen(false)}
+                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium
+        text-gray-700 hover:bg-gray-100 transition"
                                     >
                                         Cancel
-                                    </Button>
-                                    <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-5 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold
+        hover:bg-indigo-700 transition"
+                                    >
                                         Add Member
-                                    </Button>
+                                    </button>
                                 </div>
                             </form>
+
+
+
+
                         </DialogContent>
                     </Dialog>
                     <div className="relative flex-1">
