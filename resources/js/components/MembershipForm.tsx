@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InertiaForm } from '@inertiajs/react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FormData {
   name: string;
@@ -37,8 +40,24 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
 }) => {
   const [step, setStep] = useState(1);
 
+  // Recalculate age when birthdate changes
+  useEffect(() => {
+    if (data.birthdate) {
+      const birthDate = new Date(data.birthdate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      setData('age', age.toString());
+    } else {
+      setData('age', '');
+    }
+  }, [data.birthdate, setData]);
+
   const handleNext = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
     setStep(2);
   };
 
@@ -46,6 +65,22 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+      {/* Error Summary */}
+      {Object.keys(errors).length > 0 && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Form Submission Failed</AlertTitle>
+          <AlertDescription>
+            Please correct the following errors:
+            <ul className="list-disc ml-4 mt-2">
+              {Object.entries(errors).map(([field, message]) => (
+                <li key={field}>{message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Navigation Indicators */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center w-full">
@@ -106,13 +141,13 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  Email <span className="text-blue-500 dark:text-teal-400">*</span>
+                  Email
                 </label>
                 <input
                   type="email"
-                  value={data.email}
+                  value={data.email || ''}
                   onChange={(e) => setData('email', e.target.value)}
-                  placeholder="john@example.com"
+                  placeholder="rampatil001@example.com"
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:border-teal-400 dark:focus:ring-teal-400/30 transition-all duration-200"
                 />
                 {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
@@ -137,22 +172,7 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
                 <input
                   type="date"
                   value={data.birthdate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setData('birthdate', val);
-                    if (val) {
-                      const birthDate = new Date(val);
-                      const today = new Date();
-                      let age = today.getFullYear() - birthDate.getFullYear();
-                      const m = today.getMonth() - birthDate.getMonth();
-                      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                        age--;
-                      }
-                      setData('age', age.toString());
-                    } else {
-                      setData('age', '');
-                    }
-                  }}
+                  onChange={(e) => setData('birthdate', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:border-teal-400 dark:focus:ring-teal-400/30 transition-all duration-200"
                 />
                 {errors.birthdate && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.birthdate}</p>}
@@ -187,13 +207,16 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
                 {errors.gender && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.gender}</p>}
               </div>
 
-              {/* Address (full width) */}
+              {/* Address */}
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Address</label>
                 <textarea
                   rows={3}
-                  value={data.address}
-                  onChange={(e) => setData('address', e.target.value)}
+                  value={data.address || ''}
+                  onChange={(e) => {
+                    console.log('Address changed to:', e.target.value); // Debug log
+                    setData('address', e.target.value);
+                  }}
                   placeholder="Enter full address"
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:border-teal-400 dark:focus:ring-teal-400/30 transition-all duration-200 resize-none"
                 />

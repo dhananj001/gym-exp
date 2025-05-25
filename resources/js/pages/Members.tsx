@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import MembershipForm from "../components/MembershipForm";
 import MemberDetailsPopup from '../components/MemberDetailsPopup';
 
-// Define interfaces for TypeScript type safety
+// Interfaces unchanged
 interface Member {
     id: number;
     name: string;
@@ -61,7 +61,6 @@ interface PageProps {
     };
 }
 
-// Breadcrumbs for navigation
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Members', href: '/members' },
@@ -71,14 +70,14 @@ const Members: React.FC = () => {
     const { props } = usePage<PageProps>();
     const { members, flash } = props;
 
-    // Form state for adding/editing members
-    const { data, setData, post, put, delete: deleteRequest, errors, reset } = useForm<FormData>({
+    // Form for adding members
+    const addForm = useForm<FormData>({
         name: '',
         email: '',
         phone: '',
         membership_type: '1_month',
-        start_date: new Date().toISOString().split('T')[0], // Default to today
-        expiry_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0], // 1 month from today
+        start_date: new Date().toISOString().split('T')[0],
+        expiry_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
         birthdate: '',
         age: '',
         gender: '',
@@ -89,26 +88,44 @@ const Members: React.FC = () => {
         workout_time_slot: '',
     });
 
-    // State for search, filter, loading, editing, and popup
+    // Form for editing members
+    const [editMember, setEditMember] = useState<Member | null>(null);
+    const [serverError, setServerError] = useState<string | null>(null); // New state for server errors
+    const editForm = useForm<FormData>({
+        name: '',
+        email: '',
+        phone: '',
+        membership_type: '1_month',
+        start_date: '',
+        expiry_date: '',
+        birthdate: '',
+        age: '',
+        gender: '',
+        address: '',
+        membership_fee: '',
+        payment_status: '',
+        payment_method: '',
+        workout_time_slot: '',
+    });
+
+    // State for search, filter, loading, and popup
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('all');
     const [isLoading, setIsLoading] = useState(true);
-    const [editMember, setEditMember] = useState<Member | null>(null);
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false); // Control Add Member dialog
-    const [selectedMember, setSelectedMember] = useState<Member | null>(null); // For popup
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
-    // Simulate loading for better UX
+    // Simulate loading
     useEffect(() => {
         setTimeout(() => setIsLoading(false), 400);
     }, []);
 
-    // Auto-calculate expiry date when membership type or start date changes
+    // Auto-calculate expiry date for add form
     useEffect(() => {
-        if (data.membership_type !== 'custom') {
-            const startDate = new Date(data.start_date);
+        if (addForm.data.membership_type !== 'custom') {
+            const startDate = new Date(addForm.data.start_date);
             let expiryDate: Date;
-
-            switch (data.membership_type) {
+            switch (addForm.data.membership_type) {
                 case '1_month':
                     expiryDate = new Date(startDate.setMonth(startDate.getMonth() + 1));
                     break;
@@ -124,19 +141,46 @@ const Members: React.FC = () => {
                 default:
                     return;
             }
-
-            setData('expiry_date', expiryDate.toISOString().split('T')[0]);
+            addForm.setData('expiry_date', expiryDate.toISOString().split('T')[0]);
         }
-    }, [data.membership_type, data.start_date]);
+    }, [addForm.data.membership_type, addForm.data.start_date]);
+
+    // Initialize edit form when editMember changes
+    useEffect(() => {
+        if (editMember) {
+            editForm.reset();
+            editForm.setData({
+                name: editMember.name || '',
+                email: editMember.email || '',
+                phone: editMember.phone || '',
+                membership_type: editMember.membership_type || '1_month',
+                start_date: editMember.start_date || '',
+                expiry_date: editMember.expiry_date || '',
+                birthdate: editMember.birthdate || '',
+                age: editMember.age || '',
+                gender: editMember.gender || '',
+                address: editMember.address || '',
+                membership_fee: editMember.membership_fee || '',
+                payment_status: editMember.payment_status || '',
+                payment_method: editMember.payment_method || '',
+                workout_time_slot: editMember.workout_time_slot || '',
+            });
+            setServerError(null); // Clear server error when opening edit form
+        }
+    }, [editMember]);
 
     // Handle adding a new member
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/api/members', {
+        addForm.post('/members', {
             preserveState: true,
             onSuccess: () => {
-                reset(); // Clear form
-                setIsAddDialogOpen(false); // Close dialog
+                addForm.reset();
+                setIsAddDialogOpen(false);
+            },
+            onError: (errors) => {
+                console.log('Add errors:', errors);
+                setServerError('Failed to add member. Please check the form.');
             },
         });
     };
@@ -144,33 +188,24 @@ const Members: React.FC = () => {
     // Handle editing a member
     const handleEdit = (member: Member) => {
         setEditMember(member);
-        setData({
-            name: member.name,
-            email: member.email,
-            phone: member.phone,
-            membership_type: member.membership_type,
-            start_date: member.start_date,
-            expiry_date: member.expiry_date,
-            birthdate: member.birthdate,
-            age: member.age,
-            gender: member.gender,
-            address: member.address,
-            membership_fee: member.membership_fee,
-            payment_status: member.payment_status,
-            payment_method: member.payment_method,
-            workout_time_slot: member.workout_time_slot,
-        });
     };
 
     // Handle updating a member
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (editMember) {
-            put(`/api/members/${editMember.id}`, {
+            console.log('Submitting edit form with data:', editForm.data); // Debug payload
+            editForm.put(`/members/${editMember.id}`, {
                 preserveState: true,
                 onSuccess: () => {
-                    setEditMember(null); // Close edit dialog
-                    reset();
+                    console.log('Update successful');
+                    editForm.reset();
+                    setEditMember(null);
+                    setServerError(null);
+                },
+                onError: (errors) => {
+                    console.log('Update errors:', errors);
+                    setServerError('Failed to update member. Please check the form or try again.');
                 },
             });
         }
@@ -178,14 +213,13 @@ const Members: React.FC = () => {
 
     // Handle deleting a member
     const handleDelete = (id: number) => {
-        deleteRequest(`/api/members/${id}`, {
+        editForm.delete(`/members/${id}`, {
             preserveState: true,
         });
     };
 
     // Handle row click to open popup
     const handleRowClick = (member: Member, e: React.MouseEvent<HTMLTableRowElement>) => {
-        // Prevent row click if clicking on Edit/Delete buttons
         if ((e.target as HTMLElement).closest('button')) return;
         setSelectedMember(member);
     };
@@ -205,10 +239,8 @@ const Members: React.FC = () => {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Members" />
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Page Title */}
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gym Members Management</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gym Members</h1>
 
-                {/* Flash Messages for Success/Error Feedback */}
                 {flash?.success && (
                     <Alert className={cn("bg-green-50 border-green-200 animate-in fade-in dark:bg-green-900 dark:border-green-700")}>
                         <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -222,7 +254,6 @@ const Members: React.FC = () => {
                     </Alert>
                 )}
 
-                {/* Sticky Action Bar with Add Button and Search/Filter */}
                 <div className="sticky top-0 z-10 lg:w-[1100px] bg-white dark:bg-gray-800 shadow-sm p-4 rounded-lg flex flex-col sm:flex-row gap-4 items-center">
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
@@ -235,10 +266,16 @@ const Members: React.FC = () => {
                             <DialogHeader>
                                 <DialogTitle className="text-gray-900 dark:text-gray-100">Add New Member</DialogTitle>
                             </DialogHeader>
+                            {serverError && (
+                                <Alert variant="destructive" className="mb-4">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>{serverError}</AlertDescription>
+                                </Alert>
+                            )}
                             <MembershipForm
-                                data={data}
-                                setData={setData}
-                                errors={errors}
+                                data={addForm.data}
+                                setData={addForm.setData}
+                                errors={addForm.errors}
                                 handleSubmit={handleSubmit}
                                 setIsOpen={setIsAddDialogOpen}
                                 mode="add"
@@ -266,7 +303,6 @@ const Members: React.FC = () => {
                     </Select>
                 </div>
 
-                {/* Members List */}
                 <Card className="shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
                     <CardHeader>
                         <CardTitle className="text-gray-900 dark:text-gray-100">Members List</CardTitle>
@@ -323,7 +359,6 @@ const Members: React.FC = () => {
                                                     )}
                                                 </TableCell>
                                                 <TableCell onClick={(e) => e.stopPropagation()}>
-                                                    {/* Edit Button with Pencil Icon */}
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
@@ -342,10 +377,16 @@ const Members: React.FC = () => {
                                                                         <DialogHeader>
                                                                             <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Member</DialogTitle>
                                                                         </DialogHeader>
+                                                                        {serverError && (
+                                                                            <Alert variant="destructive" className="mb-4">
+                                                                                <AlertCircle className="h-4 w-4" />
+                                                                                <AlertDescription>{serverError}</AlertDescription>
+                                                                            </Alert>
+                                                                        )}
                                                                         <MembershipForm
-                                                                            data={data}
-                                                                            setData={setData}
-                                                                            errors={errors}
+                                                                            data={editForm.data}
+                                                                            setData={editForm.setData}
+                                                                            errors={editForm.errors}
                                                                             handleSubmit={handleUpdate}
                                                                             setIsOpen={() => setEditMember(null)}
                                                                             mode="edit"
@@ -358,7 +399,6 @@ const Members: React.FC = () => {
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-                                                    {/* Delete Button with Trash Icon */}
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
@@ -402,7 +442,6 @@ const Members: React.FC = () => {
                     </CardContent>
                 </Card>
 
-                {/* Member Details Popup */}
                 <MemberDetailsPopup
                     member={selectedMember}
                     isOpen={!!selectedMember}

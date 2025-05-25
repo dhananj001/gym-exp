@@ -14,14 +14,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::get('/members', [MembersController::class, 'index'])->name('members');
+    Route::post('/members', [MembersController::class, 'store']);
+    Route::put('/members/{member}', [MembersController::class, 'update']);
+    Route::delete('/members/{member}', [MembersController::class, 'destroy']);
 
-    Route::post('/api/members', [MembersController::class, 'store']);
+    // Route::post('/api/members', [MembersController::class, 'store']);
 
-    Route::put('/api/members/{member}', [MembersController::class, 'update']);
-    Route::delete('/api/members/{member}', [MembersController::class, 'destroy']);
-
+    // Route::put('/api/members/{member}', [MembersController::class, 'update']);
+    // Route::delete('/api/members/{member}', [MembersController::class, 'destroy']);
 });
 
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

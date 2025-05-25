@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class MembersController extends Controller
 {
@@ -28,10 +29,11 @@ class MembersController extends Controller
      */
     public function store(Request $request)
     {
+        Log::info('Store request:', $request->all()); // Debug request
         // Validate input data
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:members,email',
+            'email' => 'nullable|email|unique:members,email',
             'phone' => 'nullable|string|max:15',
             'birthdate' => 'nullable|date',
             'age' => 'nullable|integer|min:0',
@@ -89,10 +91,11 @@ class MembersController extends Controller
      */
     public function update(Request $request, Member $member)
     {
+        Log::info('Update request:', $request->all()); // Debug request
         // Validate input data, allowing the same email for the current member
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:members,email,' . $member->id,
+            'email' => 'nullable|email|unique:members,email,' . $member->id,
             'phone' => 'nullable|string|max:15',
             'birthdate' => 'nullable|date',
             'age' => 'nullable|integer|min:0',
