@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -12,10 +12,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, AlertCircle, CheckCircle2, Plus, Pencil, Trash } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Search, AlertCircle, CheckCircle2, Plus, Pencil, Trash, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 import MembershipForm from "../components/MembershipForm";
 import MemberDetailsPopup from '../components/MemberDetailsPopup';
+import { format, parseISO } from 'date-fns';
 
 // Interfaces unchanged
 interface Member {
@@ -66,11 +69,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Members', href: '/members' },
 ];
 
+const MEMBERS_PER_PAGE = 25;
+
 const Members: React.FC = () => {
     const { props } = usePage<PageProps>();
     const { members, flash } = props;
 
-    // Form for adding members
     const addForm = useForm<FormData>({
         name: '',
         email: '',
@@ -88,9 +92,8 @@ const Members: React.FC = () => {
         workout_time_slot: '',
     });
 
-    // Form for editing members
     const [editMember, setEditMember] = useState<Member | null>(null);
-    const [serverError, setServerError] = useState<string | null>(null); // New state for server errors
+    const [serverError, setServerError] = useState<string | null>(null);
     const editForm = useForm<FormData>({
         name: '',
         email: '',
@@ -108,19 +111,18 @@ const Members: React.FC = () => {
         workout_time_slot: '',
     });
 
-    // State for search, filter, loading, and popup
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+    const [visibleCount, setVisibleCount] = useState(MEMBERS_PER_PAGE);
+    const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]); // Ref to store row elements
 
-    // Simulate loading
     useEffect(() => {
         setTimeout(() => setIsLoading(false), 400);
     }, []);
 
-    // Auto-calculate expiry date for add form
     useEffect(() => {
         if (addForm.data.membership_type !== 'custom') {
             const startDate = new Date(addForm.data.start_date);
@@ -145,7 +147,6 @@ const Members: React.FC = () => {
         }
     }, [addForm.data.membership_type, addForm.data.start_date]);
 
-    // Initialize edit form when editMember changes
     useEffect(() => {
         if (editMember) {
             editForm.reset();
@@ -165,11 +166,15 @@ const Members: React.FC = () => {
                 payment_method: editMember.payment_method || '',
                 workout_time_slot: editMember.workout_time_slot || '',
             });
-            setServerError(null); // Clear server error when opening edit form
+            setServerError(null);
         }
     }, [editMember]);
 
-    // Handle adding a new member
+    useEffect(() => {
+        setVisibleCount(MEMBERS_PER_PAGE);
+        rowRefs.current = []; // Reset refs when search/filter changes
+    }, [search, filter]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         addForm.post('/members', {
@@ -185,16 +190,14 @@ const Members: React.FC = () => {
         });
     };
 
-    // Handle editing a member
     const handleEdit = (member: Member) => {
         setEditMember(member);
     };
 
-    // Handle updating a member
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (editMember) {
-            console.log('Submitting edit form with data:', editForm.data); // Debug payload
+            console.log('Submitting edit form with data:', editForm.data);
             editForm.put(`/members/${editMember.id}`, {
                 preserveState: true,
                 onSuccess: () => {
@@ -211,20 +214,30 @@ const Members: React.FC = () => {
         }
     };
 
-    // Handle deleting a member
     const handleDelete = (id: number) => {
         editForm.delete(`/members/${id}`, {
             preserveState: true,
         });
     };
 
-    // Handle row click to open popup
     const handleRowClick = (member: Member, e: React.MouseEvent<HTMLTableRowElement>) => {
         if ((e.target as HTMLElement).closest('button')) return;
         setSelectedMember(member);
     };
 
-    // Filter and search members
+    const handleLoadMore = () => {
+        const prevCount = visibleCount;
+        setVisibleCount((prev) => prev + MEMBERS_PER_PAGE);
+        // Scroll to the first new row after a slight delay to allow animations
+        setTimeout(() => {
+            const firstNewRowIndex = prevCount;
+            const firstNewRow = rowRefs.current[firstNewRowIndex];
+            if (firstNewRow) {
+                firstNewRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 300); // Delay matches row animation duration
+    };
+
     const filteredMembers = members
         .filter((member) =>
             `${member.name} ${member.email}`.toLowerCase().includes(search.toLowerCase())
@@ -234,6 +247,21 @@ const Members: React.FC = () => {
             if (filter === 'expired') return new Date(member.expiry_date) <= new Date();
             return true;
         });
+
+    const totalMembers = filteredMembers.length;
+    const progress = totalMembers > 0 ? Math.min((visibleCount / totalMembers) * 100, 100) : 0;
+
+    const rowVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+        exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
+    };
+
+    const buttonVariants = {
+        rest: { scale: 1, opacity: 1 },
+        hover: { scale: 1.05, transition: { duration: 0.2 } },
+        tap: { scale: 0.95, transition: { duration: 0.1 } },
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -320,124 +348,180 @@ const Members: React.FC = () => {
                                 <p className="text-sm text-gray-400 dark:text-gray-500">Add a member to get started!</p>
                             </div>
                         ) : (
-                            <div className="w-full overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-gray-50 dark:bg-gray-700">
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Name</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Contact No</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Membership Type</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Start Date</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Expiry Date</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Status</TableHead>
-                                            <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredMembers.map((member) => (
-                                            <TableRow
-                                                key={member.id}
-                                                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                                onClick={(e) => handleRowClick(member, e)}
-                                            >
-                                                <TableCell className="text-gray-900 dark:text-gray-100">{member.name}</TableCell>
-                                                <TableCell className="text-gray-900 dark:text-gray-100">{member.phone || 'N/A'}</TableCell>
-                                                <TableCell className="text-gray-900 dark:text-gray-100">
-                                                    {member.membership_type === '1_month' && '1 Month'}
-                                                    {member.membership_type === '3_months' && '3 Months'}
-                                                    {member.membership_type === '6_months' && '6 Months'}
-                                                    {member.membership_type === '1_year' && '1 Year'}
-                                                    {member.membership_type === 'custom' && 'Custom'}
-                                                </TableCell>
-                                                <TableCell className="text-gray-900 dark:text-gray-100">{member.start_date}</TableCell>
-                                                <TableCell className="text-gray-900 dark:text-gray-100">{member.expiry_date}</TableCell>
-                                                <TableCell>
-                                                    {new Date(member.expiry_date) > new Date() ? (
-                                                        <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
-                                                    ) : (
-                                                        <span className="text-red-600 dark:text-red-400 font-medium">Expired</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell onClick={(e) => e.stopPropagation()}>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Dialog open={editMember?.id === member.id} onOpenChange={(open) => !open && setEditMember(null)}>
-                                                                    <DialogTrigger asChild>
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            className="mr-2 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                                                            onClick={() => handleEdit(member)}
-                                                                        >
-                                                                            <Pencil className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </DialogTrigger>
-                                                                    <DialogContent className="w-full lg:!max-w-5xl overflow-y-auto max-h-[80vh]">
-                                                                        <DialogHeader>
-                                                                            <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Member</DialogTitle>
-                                                                        </DialogHeader>
-                                                                        {serverError && (
-                                                                            <Alert variant="destructive" className="mb-4">
-                                                                                <AlertCircle className="h-4 w-4" />
-                                                                                <AlertDescription>{serverError}</AlertDescription>
-                                                                            </Alert>
-                                                                        )}
-                                                                        <MembershipForm
-                                                                            data={editForm.data}
-                                                                            setData={editForm.setData}
-                                                                            errors={editForm.errors}
-                                                                            handleSubmit={handleUpdate}
-                                                                            setIsOpen={() => setEditMember(null)}
-                                                                            mode="edit"
-                                                                        />
-                                                                    </DialogContent>
-                                                                </Dialog>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                                                <p>Edit Member</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <AlertDialog>
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <Button className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700" size="icon">
-                                                                            <Trash className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </AlertDialogTrigger>
-                                                                    <AlertDialogContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                                                                        <AlertDialogHeader>
-                                                                            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Are you sure?</AlertDialogTitle>
-                                                                            <AlertDialogDescription className="text-gray-700 dark:text-gray-200">
-                                                                                This will permanently delete {member.name}'s record.
-                                                                            </AlertDialogDescription>
-                                                                        </AlertDialogHeader>
-                                                                        <AlertDialogFooter>
-                                                                            <AlertDialogCancel className="text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
-                                                                            <AlertDialogAction
-                                                                                onClick={() => handleDelete(member.id)}
-                                                                                className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
-                                                                            >
-                                                                                Delete
-                                                                            </AlertDialogAction>
-                                                                        </AlertDialogFooter>
-                                                                    </AlertDialogContent>
-                                                                </AlertDialog>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                                                <p>Delete Member</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </TableCell>
+                            <>
+                                <div className="w-full overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-gray-50 dark:bg-gray-700">
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Name</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Contact No</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Membership Type</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Start Date</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Expiry Date</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Status</TableHead>
+                                                <TableHead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">Actions</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <AnimatePresence>
+                                                {filteredMembers.slice(0, visibleCount).map((member, index) => (
+                                                    <motion.tr
+                                                        key={member.id}
+                                                        variants={rowVariants}
+                                                        initial="hidden"
+                                                        animate="visible"
+                                                        exit="exit"
+                                                        custom={index}
+                                                        ref={(el) => (rowRefs.current[index] = el)}
+                                                        className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                                        onClick={(e) => handleRowClick(member, e)}
+                                                    >
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">{member.name}</TableCell>
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">{member.phone || 'N/A'}</TableCell>
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">
+                                                            {member.membership_type === '1_month' && '1 Month'}
+                                                            {member.membership_type === '3_months' && '3 Months'}
+                                                            {member.membership_type === '6_months' && '6 Months'}
+                                                            {member.membership_type === '1_year' && '1 Year'}
+                                                            {member.membership_type === 'custom' && 'Custom'}
+                                                        </TableCell>
+                                                        {/* <TableCell className="text-gray-900 dark:text-gray-100">{member.start_date}</TableCell>
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">{member.expiry_date}</TableCell> */}
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">
+                                                            {member.start_date ? format(parseISO(member.start_date), 'dd MMM yyyy') : 'N/A'}
+                                                        </TableCell>
+                                                        <TableCell className="text-gray-900 dark:text-gray-100">
+                                                            {member.expiry_date ? format(parseISO(member.expiry_date), 'dd MMM yyyy') : 'N/A'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {new Date(member.expiry_date) > new Date() ? (
+                                                                <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+                                                            ) : (
+                                                                <span className="text-red-600 dark:text-red-400 font-medium">Expired</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell onClick={(e) => e.stopPropagation()}>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Dialog open={editMember?.id === member.id} onOpenChange={(open) => !open && setEditMember(null)}>
+                                                                            <DialogTrigger asChild>
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="icon"
+                                                                                    className="mr-2 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                                                    onClick={() => handleEdit(member)}
+                                                                                >
+                                                                                    <Pencil className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </DialogTrigger>
+                                                                            <DialogContent className="w-full lg:!max-w-5xl overflow-y-auto max-h-[80vh]">
+                                                                                <DialogHeader>
+                                                                                    <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Member</DialogTitle>
+                                                                                </DialogHeader>
+                                                                                {serverError && (
+                                                                                    <Alert variant="destructive" className="mb-4">
+                                                                                        <AlertCircle className="h-4 w-4" />
+                                                                                        <AlertDescription>{serverError}</AlertDescription>
+                                                                                    </Alert>
+                                                                                )}
+                                                                                <MembershipForm
+                                                                                    data={editForm.data}
+                                                                                    setData={editForm.setData}
+                                                                                    errors={editForm.errors}
+                                                                                    handleSubmit={handleUpdate}
+                                                                                    setIsOpen={() => setEditMember(null)}
+                                                                                    mode="edit"
+                                                                                />
+                                                                            </DialogContent>
+                                                                        </Dialog>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                                                        <p>Edit Member</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <AlertDialog>
+                                                                            <AlertDialogTrigger asChild>
+                                                                                <Button className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700" size="icon">
+                                                                                    <Trash className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </AlertDialogTrigger>
+                                                                            <AlertDialogContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                                                                <AlertDialogHeader>
+                                                                                    <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Are you sure?</AlertDialogTitle>
+                                                                                    <AlertDialogDescription className="text-gray-700 dark:text-gray-200">
+                                                                                        This will permanently delete {member.name}'s record.
+                                                                                    </AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                    <AlertDialogCancel className="text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                                                                                    <AlertDialogAction
+                                                                                        onClick={() => handleDelete(member.id)}
+                                                                                        className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                                                                                    >
+                                                                                        Delete
+                                                                                    </AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                            </AlertDialogContent>
+                                                                        </AlertDialog>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                                                        <p>Delete Member</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </TableCell>
+                                                    </motion.tr>
+                                                ))}
+                                            </AnimatePresence>
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <div className="mt-6 space-y-4">
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0.5 }}
+                                    >
+                                        <Progress
+                                            value={progress}
+                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700"
+                                            indicatorClassName="bg-gradient-to-r from-indigo-500 to-purple-500"
+                                        />
+                                    </motion.div>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.4, delay: 0.2 }}
+                                        className="text-sm text-gray-600 dark:text-gray-400 text-center"
+                                    >
+                                        Showing {Math.min(visibleCount, totalMembers)} of {totalMembers} members
+                                    </motion.p>
+                                    {visibleCount < totalMembers && (
+                                        <div className="flex justify-center">
+                                            <motion.div
+                                                variants={buttonVariants}
+                                                initial="rest"
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                            >
+                                                <Button
+                                                    onClick={handleLoadMore}
+                                                    className="relative px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-semibold rounded-full shadow-md transition-all duration-300 flex items-center gap-2"
+                                                >
+                                                    <span>Load More</span>
+                                                    <ArrowDown className="h-4 w-4 animate-bounce" />
+                                                    <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                                </Button>
+                                            </motion.div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 </Card>
