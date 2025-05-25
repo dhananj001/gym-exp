@@ -15,6 +15,10 @@ import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
+import { useState, useEffect } from 'react';
+import { Moon, Sun } from 'lucide-react'; // For the toggle icons
+
+
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -46,6 +50,35 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+
+    // Add dark mode toggle state & logic here:
+    const [isDark, setIsDark] = useState(false);
+    useEffect(() => {
+        setIsDark(document.documentElement.classList.contains('dark'));
+    }, []);
+    const toggleDarkMode = () => {
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            setIsDark(false);
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            setIsDark(true);
+            localStorage.setItem('theme', 'dark');
+        }
+    };
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+            setIsDark(true);
+        } else {
+            document.documentElement.classList.remove('dark');
+            setIsDark(false);
+        }
+    }, []);
+
     return (
         <>
             <div className="border-sidebar-border/80 border-b">
@@ -128,6 +161,20 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         <div className="relative flex items-center space-x-1">
                             <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">
                                 <Search className="!size-5 opacity-80 group-hover:opacity-100" />
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={toggleDarkMode}
+                                aria-label="Toggle dark mode"
+                                className="ml-2"
+                            >
+                                {isDark ? (
+                                    <Sun className="h-5 w-5 text-yellow-400" />
+                                ) : (
+                                    <Moon className="h-5 w-5 text-gray-600" />
+                                )}
                             </Button>
                             <div className="hidden lg:flex">
                                 {rightNavItems.map((item) => (

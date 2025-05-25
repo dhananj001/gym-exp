@@ -157,7 +157,13 @@ export default function Dashboard() {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Dashboard" />
       <div className="px-6 py-6 space-y-8">
-
+        {/* Header + Theme Toggle */}
+        {/* <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
+            Dashboard
+          </h1>
+          <ThemeToggle />
+        </div> */}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
