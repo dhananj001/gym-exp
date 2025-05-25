@@ -64,7 +64,7 @@ const MembershipForm: React.FC<MembershipFormProps> = ({
   const handleBack = () => setStep(1);
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+    <div className="w-[620px] p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
       {/* Error Summary */}
       {Object.keys(errors).length > 0 && (
         <Alert variant="destructive" className="mb-6">

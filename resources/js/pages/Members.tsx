@@ -262,7 +262,7 @@ const Members: React.FC = () => {
                                 Add Member
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="w-full lg:!max-w-5xl overflow-y-auto max-h-[80vh]">
+                        <DialogContent className="w-full lg:!max-w-2xl overflow-y-auto max-h-[80vh]">
                             <DialogHeader>
                                 <DialogTitle className="text-gray-900 dark:text-gray-100">Add New Member</DialogTitle>
                             </DialogHeader>

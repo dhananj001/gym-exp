@@ -10,13 +10,13 @@ interface ChartCardProps {
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, isLoading, children }) => {
   return (
-    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-sm">
+    <Card className="bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 shadow-sm rounded-lg">
       <CardHeader>
-        <CardTitle className="text-gray-900 dark:text-gray-100">{title}</CardTitle>
+        <CardTitle className="text-gray-700 dark:text-zinc-200 text-lg font-semibold">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-[300px] w-full rounded-lg" />
+          <Skeleton className="h-[300px] w-full rounded-md" />
         ) : (
           <div className="h-[300px]">{children}</div>
         )}

@@ -248,18 +248,7 @@ export default function Dashboard() {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Membership Type Distribution" isLoading={isLoading}>
-            <Pie
-              data={membershipTypeData}
-              options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'Membership Types' } } }}
-            />
-          </ChartCard>
-          <ChartCard title="Payment Status Distribution" isLoading={isLoading}>
-            <Bar
-              data={paymentStatusData}
-              options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'Payment Status' } } }}
-            />
-          </ChartCard>
+
           <ChartCard title="Monthly New Members Trend" isLoading={isLoading}>
             <Line
               data={monthlyTrendData}
@@ -270,6 +259,18 @@ export default function Dashboard() {
             <Line
               data={revenueTrendData}
               options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'Revenue (₹)' } } }}
+            />
+          </ChartCard>
+          <ChartCard title="Membership Type Distribution" isLoading={isLoading}>
+            <Pie
+              data={membershipTypeData}
+              options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'Membership Types' } } }}
+            />
+          </ChartCard>
+          <ChartCard title="Payment Status Distribution" isLoading={isLoading}>
+            <Bar
+              data={paymentStatusData}
+              options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'Payment Status' } } }}
             />
           </ChartCard>
         </div>

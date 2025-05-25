@@ -10,15 +10,15 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) => {
   return (
-    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow duration-200 transform hover:-translate-y-1">
+    <Card className="bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 shadow-sm hover:shadow-lg transition-shadow duration-200 rounded-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        <CardTitle className="text-sm font-medium text-gray-500 dark:text-zinc-300">
           {title}
         </CardTitle>
         <div className={colorClass}>{icon}</div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
+        <div className="text-2xl font-semibold text-gray-700 dark:text-zinc-200">{value}</div>
       </CardContent>
     </Card>
   );
