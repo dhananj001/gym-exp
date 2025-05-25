@@ -104,7 +104,7 @@ class MembersController extends Controller
             'membership_fee' => 'required|numeric|min:0',
             'payment_status' => 'required|in:paid,partial,unpaid',
             'payment_method' => 'nullable|in:cash,card,upi,netbanking',
-            'workout_time_slot' => 'nullable|in:Morrning,Evening',
+            'workout_time_slot' => 'nullable|in:Morning,Evening',
         ]);
 
         // If validation fails, redirect back with errors and input
