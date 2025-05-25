@@ -24,7 +24,7 @@ class MembersController extends Controller
 
     /**
      * Store a new member in the database.
-     * Validates input, auto-calculates expiry date for non-custom types, and redirects.
+     * Validates input, calculates age, auto-calculates expiry date for non-custom types, and redirects.
      */
     public function store(Request $request)
     {
@@ -32,9 +32,18 @@ class MembersController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:members,email',
+            'phone' => 'nullable|string|max:15',
+            'birthdate' => 'nullable|date',
+            'age' => 'nullable|integer|min:0',
+            'gender' => 'nullable|in:male,female,other',
+            'address' => 'nullable|string|max:500',
             'membership_type' => 'required|in:1_month,3_months,6_months,1_year,custom',
             'start_date' => 'required|date',
-            'expiry_date' => 'required|date|after:start_date',
+            'expiry_date' => 'required_if:membership_type,custom|date|after_or_equal:start_date',
+            'membership_fee' => 'required|numeric|min:0',
+            'payment_status' => 'required|in:paid,partial,unpaid',
+            'payment_method' => 'nullable|in:cash,card,upi,netbanking',
+            'workout_time_slot' => 'nullable|in:Morning,Evening',
         ]);
 
         // If validation fails, redirect back with errors and input
@@ -45,14 +54,24 @@ class MembersController extends Controller
         // Get all request data
         $data = $request->all();
 
+        // Calculate age if birthdate is provided
+        if (!empty($data['birthdate'])) {
+            $birthDate = Carbon::parse($data['birthdate']);
+            $today = Carbon::today();
+            $age = $today->diffInYears($birthDate);
+            $data['age'] = $age;
+        } else {
+            $data['age'] = null;
+        }
+
         // Auto-calculate expiry date for non-custom membership types
         if ($data['membership_type'] !== 'custom') {
             $startDate = Carbon::parse($data['start_date']);
             $data['expiry_date'] = match ($data['membership_type']) {
-                '1_month' => $startDate->addMonth(),
-                '3_months' => $startDate->addMonths(3),
-                '6_months' => $startDate->addMonths(6),
-                '1_year' => $startDate->addYear(),
+                '1_month' => $startDate->copy()->addMonth(),
+                '3_months' => $startDate->copy()->addMonths(3),
+                '6_months' => $startDate->copy()->addMonths(6),
+                '1_year' => $startDate->copy()->addYear(),
                 default => $data['expiry_date'],
             };
         }
@@ -61,12 +80,12 @@ class MembersController extends Controller
         Member::create($data);
 
         // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member added successfully');
+        return redirect()->route('members')->with('flash', ['success' => 'Member added successfully']);
     }
 
     /**
      * Update an existing member's details.
-     * Validates input, auto-calculates expiry date for non-custom types, and redirects.
+     * Validates input, calculates age, auto-calculates expiry date for non-custom types, and redirects.
      */
     public function update(Request $request, Member $member)
     {
@@ -74,9 +93,18 @@ class MembersController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:members,email,' . $member->id,
+            'phone' => 'nullable|string|max:15',
+            'birthdate' => 'nullable|date',
+            'age' => 'nullable|integer|min:0',
+            'gender' => 'nullable|in:male,female,other',
+            'address' => 'nullable|string|max:500',
             'membership_type' => 'required|in:1_month,3_months,6_months,1_year,custom',
             'start_date' => 'required|date',
-            'expiry_date' => 'required|date|after:start_date',
+            'expiry_date' => 'required_if:membership_type,custom|date|after_or_equal:start_date',
+            'membership_fee' => 'required|numeric|min:0',
+            'payment_status' => 'required|in:paid,partial,unpaid',
+            'payment_method' => 'nullable|in:cash,card,upi,netbanking',
+            'workout_time_slot' => 'nullable|in:Morrning,Evening',
         ]);
 
         // If validation fails, redirect back with errors and input
@@ -87,14 +115,24 @@ class MembersController extends Controller
         // Get all request data
         $data = $request->all();
 
+        // Calculate age if birthdate is provided
+        if (!empty($data['birthdate'])) {
+            $birthDate = Carbon::parse($data['birthdate']);
+            $today = Carbon::today();
+            $age = $today->diffInYears($birthDate);
+            $data['age'] = $age;
+        } else {
+            $data['age'] = null;
+        }
+
         // Auto-calculate expiry date for non-custom membership types
         if ($data['membership_type'] !== 'custom') {
             $startDate = Carbon::parse($data['start_date']);
             $data['expiry_date'] = match ($data['membership_type']) {
-                '1_month' => $startDate->addMonth(),
-                '3_months' => $startDate->addMonths(3),
-                '6_months' => $startDate->addMonths(6),
-                '1_year' => $startDate->addYear(),
+                '1_month' => $startDate->copy()->addMonth(),
+                '3_months' => $startDate->copy()->addMonths(3),
+                '6_months' => $startDate->copy()->addMonths(6),
+                '1_year' => $startDate->copy()->addYear(),
                 default => $data['expiry_date'],
             };
         }
@@ -103,7 +141,7 @@ class MembersController extends Controller
         $member->update($data);
 
         // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member updated successfully');
+        return redirect()->route('members')->with('flash', ['success' => 'Member updated successfully']);
     }
 
     /**
@@ -116,6 +154,6 @@ class MembersController extends Controller
         $member->delete();
 
         // Redirect to the Members page with a success message
-        return redirect()->route('members')->with('success', 'Member deleted successfully');
+        return redirect()->route('members')->with('flash', ['success' => 'Member deleted successfully']);
     }
 }

@@ -9,5 +9,20 @@ class Member extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'membership_type', 'start_date', 'expiry_date'];
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+        'birthdate',
+        'age',
+        'gender',
+        'address',
+        'membership_type',
+        'start_date',
+        'expiry_date',
+        'membership_fee',
+        'payment_status',
+        'payment_method',
+        'workout_time_slot',
+    ];
 }
