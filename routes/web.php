@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // })->name('dashboard');
 
     Route::get('/dashboard', [MembersController::class, 'dashboard'])->name('dashboard');
+    // Route::get('/dashboard002', [MembersController::class, 'dashboard'])->name('dashboard002');
 
     Route::get('/members', [MembersController::class, 'index'])->name('members');
     Route::post('/members', [MembersController::class, 'store']);
