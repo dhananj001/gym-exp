@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Copy, Check, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { User, X } from 'lucide-react';
 import { CheckCircle, XCircle } from 'lucide-react';
-
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Member {
     id: number;
@@ -11,14 +11,14 @@ interface Member {
     email: string;
     phone: string;
     membership_type: '1_month' | '3_months' | '6_months' | '1_year' | 'custom';
-    start_date: string;
-    expiry_date: string;
-    birthdate: string;
+    start_date: string;   // ISO string
+    expiry_date: string;  // ISO string
+    birthdate: string;    // ISO string
     age: string;
     gender: string;
     address: string;
     membership_fee: string;
-    payment_status: string;
+    payment_status: string; // 'paid' | 'unpaid' or similar
     payment_method: string;
     workout_time_slot: string;
 }
@@ -30,19 +30,21 @@ interface MemberDetailsPopupProps {
 }
 
 const MemberDetailsPopup: React.FC<MemberDetailsPopupProps> = ({ member, isOpen, onClose }) => {
-    const [copiedField, setCopiedField] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
+    const [daysLeft, setDaysLeft] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (member) {
+            const expiry = new Date(member.expiry_date);
+            const today = new Date();
+            const diffTime = expiry.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            setDaysLeft(diffDays >= 0 ? diffDays : 0);
+        }
+    }, [member]);
 
     if (!member) return null;
 
-    const handleCopy = (text: string, field: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            setCopiedField(field);
-            setTimeout(() => setCopiedField(null), 2000); // Reset after 2 seconds
-        });
-    };
-
-    // Determine avatar based on gender with normalized case
     const getAvatarUrl = () => {
         const normalizedGender = member.gender ? member.gender.toLowerCase() : 'default';
         if (normalizedGender === 'male') {
@@ -54,131 +56,137 @@ const MemberDetailsPopup: React.FC<MemberDetailsPopupProps> = ({ member, isOpen,
         }
     };
 
+    // Payment status badge color
+    const paymentStatusBadge = member.payment_status === 'paid'
+        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="!max-w-[80vw] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl border border-blue-200 dark:border-gray-700">
-                {/* Hero Section */}
-                <div className="relative bg-gradient-to-r from-blue-200 to-blue-300 dark:from-teal-500 dark:to-teal-600 p-6 rounded-t-2xl">
-                    <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 80%22%3E%3Cpath d=%22M0 0h80v80H0z%22 fill=%22none%22/%3E%3Ccircle cx=%2240%22 cy=%2240%22 r=%2230%22 stroke=%22%23fff%22 stroke-width=%222%22 fill=%22none%22 opacity=%22.3%22/%3E%3Ccircle cx=%2240%22 cy=%2240%22 r=%2220%22 stroke=%22%23fff%22 stroke-width=%222%22 fill=%22none%22 opacity=%22.3%22/%3E%3C/svg%3E')] bg-repeat"></div>
-                    <DialogHeader className="flex items-center space-x-4">
-                        {avatarError ? (
-                            <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-700">
-                                <User className="h-8 w-8 text-gray-500 dark:text-gray-400" />
-                            </div>
-                        ) : (
-                            <img
-                                src={getAvatarUrl()}
-                                alt={`${member.name}'s avatar`}
-                                className="w-16 h-16 rounded-full shadow-md border-2 border-white dark:border-gray-700 object-cover"
-                                onError={() => setAvatarError(true)}
-                            />
-                        )}
-                        <DialogTitle className="text-2xl font-bold text-gray-800 dark:text-gray-100">{member.name}</DialogTitle>
-                    </DialogHeader>
-                </div>
+        <AnimatePresence>
+            {isOpen && (
+                <Dialog open={isOpen} onOpenChange={onClose}>
+                    <DialogContent as={motion.div}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 30 }}
+                        transition={{ duration: 0.3 }}
+                        className="!max-w-[80vw] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl border border-blue-200 dark:border-gray-700"
+                    >
+                        {/* Sticky header with avatar, name, close button */}
+                        <div className="sticky top-0 z-30 bg-gradient-to-r from-blue-200 to-blue-300 dark:from-teal-500 dark:to-teal-600 p-6 rounded-t-2xl flex items-center justify-between shadow-md">
+                            <div className="flex items-center space-x-4">
+                                {avatarError ? (
+                                    <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-700">
+                                        <User className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={getAvatarUrl()}
+                                        alt={`${member.name}'s avatar`}
+                                        className="w-16 h-16 rounded-full shadow-md border-2 border-white dark:border-gray-700 object-cover"
+                                        onError={() => setAvatarError(true)}
+                                    />
+                                )}
+                                <DialogTitle className="text-2xl font-bold text-gray-800 dark:text-gray-100">{member.name}</DialogTitle>
 
-                {/* Member Details */}
-                <div className="p-6 space-y-8">
-                    {/* Personal Information */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Personal Information</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
-                            {/* Email */}
-                            <div className="group relative p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
-                                <div className="flex items-center mt-1">
-                                    <p className="text-sm text-gray-900 dark:text-gray-100">{member.email || 'N/A'}</p>
-                                    {member.email && (
-                                        <button
-                                            onClick={() => handleCopy(member.email, 'email')}
-                                            className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-blue-500 dark:text-teal-400 hover:text-blue-600 dark:hover:text-teal-500"
-                                        >
-                                            {copiedField === 'email' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                        </button>
-                                    )}
-                                </div>
+                                {/* Payment Status Badge */}
+                                <span className={cn("ml-4 px-3 py-1 rounded-full font-semibold text-sm", paymentStatusBadge)}>
+                                    {member.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                                </span>
+
+                                {/* Days left badge */}
+                                {daysLeft !== null && (
+                                    <span className="ml-2 px-3 py-1 rounded-full bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-300 font-semibold text-sm" title="Days left before membership expires">
+                                        {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+                                    </span>
+                                )}
                             </div>
 
-                            {/* Phone */}
-                            <div className="group relative p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Phone</label>
-                                <div className="flex items-center mt-1">
-                                    <p className="text-sm text-gray-900 dark:text-gray-100">{member.phone || 'N/A'}</p>
-                                    {member.phone && (
-                                        <button
-                                            onClick={() => handleCopy(member.phone, 'phone')}
-                                            className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-blue-500 dark:text-teal-400 hover:text-blue-600 dark:hover:text-teal-500"
-                                        >
-                                            {copiedField === 'phone' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Birthdate */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Birthdate</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.birthdate || 'N/A'}</p>
-                            </div>
-
-                            {/* Age */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Age</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.age || 'N/A'}</p>
-                            </div>
-
-                            {/* Gender */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Gender</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.gender || 'N/A'}</p>
-                            </div>
-
-                            {/* Address */}
-                            <div className=" group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Address</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.address || 'N/A'}</p>
-                            </div>
+                            {/* Close Button */}
+                            {/* <button
+                                onClick={onClose}
+                                aria-label="Close details popup"
+                                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition"
+                            >
+                                <X className="w-6 h-6" />
+                            </button> */}
                         </div>
-                    </div>
 
-                    {/* Membership Information */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Membership Information</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
+                        {/* Member Details */}
+                        <div className="p-6 space-y-8">
 
-                            {/* Membership Fee + Payment Status Icon */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Membership Fee (₹)</label>
-                                <div className="mt-1 flex items-center gap-2 text-sm text-gray-900 dark:text-gray-100">
-                                    <span>{member.membership_fee || 'N/A'}</span>
-                                    {member.payment_status === 'paid' ? (
-                                        <CheckCircle className="text-green-500 w-5 h-5" title="Paid" />
-                                    ) : (
-                                        <XCircle className="text-red-500 w-5 h-5" title="Not Paid" />
-                                    )}
+                            {/* Personal Information Group */}
+                            <section className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Personal Information</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                                    {/* Email */}
+                                    <ReadOnlyField label="Email" value={member.email} />
+
+                                    {/* Phone */}
+                                    <ReadOnlyField label="Phone" value={member.phone} />
+
+                                    {/* Birthdate */}
+                                    <ReadOnlyField label="Birthdate" value={member.birthdate} />
+
+                                    {/* Age */}
+                                    <ReadOnlyField label="Age" value={member.age} />
+
+                                    {/* Gender */}
+                                    <ReadOnlyField label="Gender" value={member.gender} />
+
+                                    {/* Address */}
+                                    <ReadOnlyField label="Address" value={member.address} />
+
                                 </div>
-                            </div>
+                            </section>
 
-                            {/* Payment Method */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Payment Method</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.payment_method || 'N/A'}</p>
-                            </div>
+                            {/* Membership Information Group */}
+                            <section className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Membership Information</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                            {/* Workout Time Slot */}
-                            <div className="group p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-102">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Workout Time Slot</label>
-                                <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{member.workout_time_slot || 'N/A'}</p>
-                            </div>
+                                    {/* Membership Fee + Payment Status Icon */}
+                                    <div className="p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-transform transform hover:scale-[1.02]">
+                                        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 uppercase tracking-wide">Membership Fee (₹)</label>
+                                        <div className="flex items-center gap-2 text-sm text-gray-900 dark:text-gray-100">
+                                            <span>{member.membership_fee || 'N/A'}</span>
+                                            {member.payment_status === 'paid' ? (
+                                                <CheckCircle className="text-green-500 w-5 h-5" title="Paid" />
+                                            ) : (
+                                                <XCircle className="text-red-500 w-5 h-5" title="Not Paid" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Method */}
+                                    <ReadOnlyField label="Payment Method" value={member.payment_method} />
+
+                                    {/* Workout Time Slot */}
+                                    <ReadOnlyField label="Workout Time Slot" value={member.workout_time_slot} />
+
+                                </div>
+                            </section>
 
                         </div>
-                    </div>
-
-
-                </div>
-            </DialogContent>
-        </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </AnimatePresence>
     );
 };
+
+// Read-only field without copy button and with enhanced label style
+interface ReadOnlyFieldProps {
+    label: string;
+    value: string | null | undefined;
+}
+
+const ReadOnlyField: React.FC<ReadOnlyFieldProps> = ({ label, value }) => (
+    <div className="p-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm">
+        <label className="block text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 uppercase tracking-wide">{label}</label>
+        <p className="text-sm text-gray-900 dark:text-gray-100">{value || 'N/A'}</p>
+    </div>
+);
 
 export default MemberDetailsPopup;
