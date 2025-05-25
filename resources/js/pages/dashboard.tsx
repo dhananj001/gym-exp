@@ -1,17 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
   Users,
   CheckCircle2,
   XCircle,
   DollarSign,
-  Calendar,
 } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import { useTheme } from '../components/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,7 +20,6 @@ import {
   Legend,
   Title,
 } from 'chart.js';
-
 import {
   Card,
   CardHeader,
@@ -38,6 +35,9 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -66,49 +66,29 @@ interface Analytics {
   monthlyTrend: { [month: string]: number };
 }
 
+interface PageProps {
+  analytics: Analytics;
+  flash?: {
+    success?: string;
+    error?: string;
+  };
+}
+
 const breadcrumbs = [{ title: 'Dashboard', href: '/dashboard' }];
 
 export default function Dashboard() {
+  const { props } = usePage<PageProps>();
+  const { analytics, flash } = props;
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample data - replace with your real data from props or API
-  const analytics: Analytics = {
-    totalMembers: 120,
-    activeMembers: 95,
-    expiredMembers: 25,
-    totalRevenue: '₹125,000',
-    recentMembers: [
-      {
-        id: 1,
-        name: 'John Doe',
-        membership_type: '1 Month',
-        start_date: '2025-04-01',
-        expiry_date: '2025-04-30',
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        membership_type: '3 Months',
-        start_date: '2025-03-15',
-        expiry_date: '2025-06-14',
-      },
-    ],
-    monthlyTrend: {
-      Jan: 10,
-      Feb: 15,
-      Mar: 18,
-      Apr: 20,
-      May: 25,
-      Jun: 22,
-      Jul: 30,
-      Aug: 28,
-      Sep: 35,
-      Oct: 40,
-      Nov: 38,
-      Dec: 45,
-    },
-  };
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
+  // Line chart data for monthly trend
   const monthlyTrendData = {
     labels: Object.keys(analytics.monthlyTrend),
     datasets: [
@@ -125,6 +105,7 @@ export default function Dashboard() {
     ],
   };
 
+  // Chart options with theme support
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -156,108 +137,151 @@ export default function Dashboard() {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Dashboard" />
-      <div className="px-6 py-6 space-y-8">
-
+      <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        {/* Flash Messages */}
+        {flash?.success && (
+          <Alert className="bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription className="text-green-800 dark:text-green-200">{flash.success}</AlertDescription>
+          </Alert>
+        )}
+        {flash?.error && (
+          <Alert className="bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="text-red-800 dark:text-red-200">{flash.error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Members
-              </CardTitle>
-              <Users className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.totalMembers}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Members
-              </CardTitle>
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.activeMembers}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Expired Members
-              </CardTitle>
-              <XCircle className="h-5 w-5 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.expiredMembers}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Revenue
-              </CardTitle>
-              <DollarSign className="h-5 w-5 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.totalRevenue}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Members
+                </CardTitle>
+                <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analytics.totalMembers}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Active Members
+                </CardTitle>
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analytics.activeMembers}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Expired Members
+                </CardTitle>
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analytics.expiredMembers}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Revenue
+                </CardTitle>
+                <DollarSign className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  ₹{analytics.totalRevenue}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Recent Members Table */}
-        <Card className="mt-8">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
           <CardHeader>
-            <CardTitle>Recent Members</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Recent Members</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Membership</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Expiry Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analytics.recentMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell>{member.id}</TableCell>
-                    <TableCell>{member.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{member.membership_type}</Badge>
-                    </TableCell>
-                    <TableCell>{member.start_date}</TableCell>
-                    <TableCell>{member.expiry_date}</TableCell>
-                  </TableRow>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 dark:bg-gray-700">
+                    <TableHead className="text-gray-900 dark:text-gray-100">ID</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Name</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Membership</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Start Date</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Expiry Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analytics.recentMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400">
+                        No recent members found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    analytics.recentMembers.map((member) => (
+                      <TableRow key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <TableCell className="text-gray-900 dark:text-gray-100">{member.id}</TableCell>
+                        <TableCell className="text-gray-900 dark:text-gray-100">{member.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+                            {member.membership_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-gray-900 dark:text-gray-100">{member.start_date}</TableCell>
+                        <TableCell className="text-gray-900 dark:text-gray-100">{member.expiry_date}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
         {/* Monthly Trend Chart */}
-        <Card className="mt-8">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
           <CardHeader>
-            <CardTitle>Monthly New Members Trend</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Monthly New Members Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <Line data={monthlyTrendData} options={chartOptions} height={100} />
+            {isLoading ? (
+              <Skeleton className="h-[300px] w-full rounded-lg" />
+            ) : (
+            //   <div className="h-[300px]">
+                <Line data={monthlyTrendData} options={chartOptions}height={100} />
+            //   </div>
+            )}
           </CardContent>
         </Card>
       </div>

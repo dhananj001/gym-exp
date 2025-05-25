@@ -19,44 +19,52 @@ class MembersController extends Controller
     {
         $today = Carbon::today();
 
-        // Total members
-        $totalMembers = Member::count();
-
-        // Active members (expiry_date > today)
-        $activeMembers = Member::where('expiry_date', '>', $today)->count();
-
-        // Expired members (expiry_date <= today)
-        $expiredMembers = Member::where('expiry_date', '<=', $today)->count();
-
-        // Total revenue (sum of membership_fee where payment_status is paid)
-        $totalRevenue = Member::where('payment_status', 'paid')->sum('membership_fee');
-
-        // Membership type distribution
-        $membershipTypes = Member::groupBy('membership_type')
-            ->selectRaw('membership_type, COUNT(*) as count')
-            ->pluck('count', 'membership_type')
+        // Monthly trend: Count new members per month for the current year
+        $monthlyTrend = Member::selectRaw('MONTHNAME(created_at) as month, COUNT(*) as count')
+            ->whereYear('created_at', $today->year)
+            ->groupBy('month')
+            ->orderByRaw('MONTH(created_at)')
+            ->pluck('count', 'month')
+            ->mapWithKeys(function ($count, $month) {
+                // Abbreviate month names to match frontend (e.g., "January" -> "Jan")
+                return [substr($month, 0, 3) => $count];
+            })
             ->toArray();
 
-        // Payment status distribution
-        $paymentStatuses = Member::groupBy('payment_status')
-            ->selectRaw('payment_status, COUNT(*) as count')
-            ->pluck('count', 'payment_status')
-            ->toArray();
-
-        // Recent members (latest 5)
-        $recentMembers = Member::orderBy('created_at', 'desc')
-            ->take(5)
-            ->get(['id', 'name', 'membership_type', 'start_date', 'expiry_date']);
+        // Ensure all months are included, even with zero counts
+        $allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $monthlyTrend = array_merge(array_fill_keys($allMonths, 0), $monthlyTrend);
 
         return Inertia::render('Dashboard', [
             'analytics' => [
-                'totalMembers' => $totalMembers,
-                'activeMembers' => $activeMembers,
-                'expiredMembers' => $expiredMembers,
-                'totalRevenue' => number_format($totalRevenue, 2),
-                'membershipTypes' => $membershipTypes,
-                'paymentStatuses' => $paymentStatuses,
-                'recentMembers' => $recentMembers,
+                'totalMembers' => Member::count(),
+                'activeMembers' => Member::where('expiry_date', '>', $today)->count(),
+                'expiredMembers' => Member::where('expiry_date', '<=', $today)->count(),
+                'totalRevenue' => number_format(Member::where('payment_status', 'paid')->sum('membership_fee'), 2),
+                'membershipTypes' => Member::groupBy('membership_type')
+                    ->selectRaw('membership_type, COUNT(*) as count')
+                    ->pluck('count', 'membership_type')
+                    ->toArray(),
+                'paymentStatuses' => Member::groupBy('payment_status')
+                    ->selectRaw('payment_status, COUNT(*) as count')
+                    ->pluck('count', 'payment_status')
+                    ->toArray(),
+                'recentMembers' => Member::orderBy('created_at', 'desc')
+                    ->take(5)
+                    ->get(['id', 'name', 'membership_type', 'start_date', 'expiry_date'])
+                    ->map(function ($member) {
+                        // Ensure membership_type is formatted for display
+                        $member->membership_type = match ($member->membership_type) {
+                            '1_month' => '1 Month',
+                            '3_months' => '3 Months',
+                            '6_months' => '6 Months',
+                            '1_year' => '1 Year',
+                            'custom' => 'Custom',
+                            default => $member->membership_type,
+                        };
+                        return $member;
+                    }),
+                'monthlyTrend' => $monthlyTrend,
             ],
             'flash' => session('flash', []),
         ]);
