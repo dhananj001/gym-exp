@@ -100,7 +100,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
         console.log('Form submitted with data:', data);
         try {
             await onSubmit(data);
-            reset(); // Reset form on successful submission
+            reset(); // Clear form on success
         } catch (error) {
             console.error('Form submission error:', error);
             form.setError('root', { type: 'server', message: 'Failed to submit form. Please try again.' });
@@ -188,7 +188,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="name">Name</FormLabel>
                                         <FormControl>
-                                            <Input id="name" placeholder="John Doe" {...field} />
+                                            <Input id="name" placeholder="John Doe" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -202,7 +202,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="email">Email</FormLabel>
                                         <FormControl>
-                                            <Input id="email" type="email" placeholder="john@example.com" {...field} />
+                                            <Input id="email" type="email" placeholder="john@example.com" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -215,7 +215,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel htmlFor="gender">Gender</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <FormControl>
                                                 <SelectTrigger id="gender">
                                                     <SelectValue placeholder="Select gender" />
@@ -239,7 +239,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="dob">Date of Birth</FormLabel>
                                         <FormControl>
-                                            <Input id="dob" type="date" {...field} />
+                                            <Input id="dob" type="date" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -262,7 +262,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="contact_number">Contact Number</FormLabel>
                                         <FormControl>
-                                            <Input id="contact_number" placeholder="+1234567890" {...field} />
+                                            <Input id="contact_number" placeholder="+1234567890" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -281,6 +281,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                                 placeholder="123 Main St, City, Country"
                                                 {...field}
+                                                value={field.value || ''}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -298,7 +299,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel htmlFor="membership_plan">Membership Plan</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <FormControl>
                                                 <SelectTrigger id="membership_plan">
                                                     <SelectValue placeholder="Select plan" />
@@ -320,7 +321,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel htmlFor="membership_type">Membership Type</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <FormControl>
                                                 <SelectTrigger id="membership_type">
                                                     <SelectValue placeholder="Select type" />
@@ -374,7 +375,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="start_date">Start Date</FormLabel>
                                         <FormControl>
-                                            <Input id="start_date" type="date" {...field} />
+                                            <Input id="start_date" type="date" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -393,6 +394,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                                 type="date"
                                                 {...field}
                                                 disabled={membershipType !== 'custom'}
+                                                value={field.value || ''}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -411,7 +413,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                     <FormItem>
                                         <FormLabel htmlFor="payable_amount">Payable Amount ($)</FormLabel>
                                         <FormControl>
-                                            <Input id="payable_amount" type="number" disabled {...field} />
+                                            <Input id="payable_amount" type="number" disabled {...field} value={field.value || 0} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -424,7 +426,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel htmlFor="payment_mode">Payment Mode</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <FormControl>
                                                 <SelectTrigger id="payment_mode">
                                                     <SelectValue placeholder="Select mode" />
@@ -449,7 +451,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                                         <FormLabel htmlFor="payment_status">Payment Status</FormLabel>
                                         <Select
                                             onValueChange={(value) => field.onChange(value || null)}
-                                            value={field.value || undefined}
+                                            value={field.value || ''}
                                         >
                                             <FormControl>
                                                 <SelectTrigger id="payment_status">
@@ -667,11 +669,11 @@ const Members: React.FC = () => {
     const filteredMembers = useMemo(() => {
         return members
             .filter((member) =>
-                `${member.name} ${member.email}`.toLowerCase().includes(search.toLowerCase())
+                `${member.name || ''} ${member.email || ''}`.toLowerCase().includes(search.toLowerCase())
             )
             .filter((member) => {
-                if (filter === 'active') return new Date(member.expiry_date) > new Date();
-                if (filter === 'expired') return new Date(member.expiry_date) <= new Date();
+                if (filter === 'active') return member.expiry_date && new Date(member.expiry_date).getTime() > Date.now();
+                if (filter === 'expired') return member.expiry_date && new Date(member.expiry_date).getTime() <= Date.now();
                 return true;
             });
     }, [members, search, filter]);
@@ -679,7 +681,7 @@ const Members: React.FC = () => {
     // Handlers
     const handleAddSubmit = (formData: FormData) => {
         console.log('handleAddSubmit called with:', formData);
-        setData(formData);
+        setData({ ...formData }); // Deep copy to ensure all fields
         console.log('Sending POST request with data:', formData);
         post('/api/members', {
             data: formData,
@@ -707,7 +709,7 @@ const Members: React.FC = () => {
             address: member.address || '',
             membership_plan: member.membership_plan || 'cardio',
             membership_type: member.membership_type || '1_month',
-            trainer_id: member.trainer_id,
+            trainer_id: member.trainer_id ?? null,
             start_date: member.start_date || new Date().toISOString().split('T')[0],
             expiry_date: member.expiry_date || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
             payable_amount: member.payable_amount || 0,
@@ -719,7 +721,7 @@ const Members: React.FC = () => {
     const handleUpdate = (formData: FormData) => {
         if (editMember) {
             console.log('Updating member:', formData);
-            setData(formData);
+            setData({ ...formData });
             put(`/api/members/${editMember.id}`, {
                 data: formData,
                 preserveState: true,
@@ -775,8 +777,8 @@ const Members: React.FC = () => {
                     <Alert className={cn("bg-red-50 border-red-200 animate-in fade-in")}>
                         <AlertCircle className="h-4 w-4 text-red-600" />
                         <AlertDescription>
-                            {Object.values(errors).map((error, index) => (
-                                <div key={index}>{error}</div>
+                            {Object.entries(errors).map(([field, error], index) => (
+                                <div key={index}>{field}: {error}</div>
                             ))}
                         </AlertDescription>
                     </Alert>
@@ -832,7 +834,7 @@ const Members: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="w-full flex flex-col justify-center space-y-2 p-4">
+                            <div className="w-full lg:w-[1000px] mx-auto flex flex-col justify-center space-y-2 p-4">
                                 <Skeleton className="h-12 w-full" />
                                 <Skeleton className="h-12 w-full" />
                                 <Skeleton className="h-12 w-full" />
@@ -843,7 +845,7 @@ const Members: React.FC = () => {
                                 <p className="text-sm text-gray-400">Add a member to get started!</p>
                             </div>
                         ) : (
-                            <div className="w-full overflow-x-auto">
+                            <div className="w-full lg:w-[1000px] mx-auto overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -873,7 +875,7 @@ const Members: React.FC = () => {
                                                 <TableCell>{member.start_date || 'N/A'}</TableCell>
                                                 <TableCell>{member.expiry_date || 'N/A'}</TableCell>
                                                 <TableCell>
-                                                    {new Date(member.expiry_date) > new Date() ? (
+                                                    {member.expiry_date && new Date(member.expiry_date).getTime() > Date.now() ? (
                                                         <span className="text-green-600 font-medium">Active</span>
                                                     ) : (
                                                         <span className="text-red-600 font-medium">Expired</span>
@@ -903,7 +905,7 @@ const Members: React.FC = () => {
                                                                     <DialogContent className="max-w-3xl">
                                                                         <DialogHeader>
                                                                             <DialogTitle>Edit Member</DialogTitle>
-                                                                            <DialogDescription>Update the details for {member.name}.</DialogDescription>
+                                                                            <DialogDescription>Update the details for {member.name || 'member'}.</DialogDescription>
                                                                         </DialogHeader>
                                                                         <MemberForm
                                                                             initialData={data}
@@ -935,7 +937,7 @@ const Members: React.FC = () => {
                                                                         <AlertDialogHeader>
                                                                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                                             <AlertDialogDescription>
-                                                                                This will permanently delete {member.name}'s record.
+                                                                                This will permanently delete {member.name || 'member'}'s record.
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
