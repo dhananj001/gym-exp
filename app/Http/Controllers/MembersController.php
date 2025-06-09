@@ -19,30 +19,34 @@ class MembersController extends Controller
     {
         $today = Carbon::today();
 
-        // Monthly trend: New members per month for the current year
-        $monthlyTrend = Member::selectRaw('MONTHNAME(created_at) as month, COUNT(*) as count')
+        // ✅ Monthly trend: New members per month for the current year
+        $monthlyTrend = Member::selectRaw('MONTH(created_at) as month_num, MONTHNAME(created_at) as month_name, COUNT(*) as count')
             ->whereYear('created_at', $today->year)
-            ->groupBy('month')
-            ->orderByRaw('MONTH(created_at)')
-            ->pluck('count', 'month')
+            ->groupBy('month_num', 'month_name')
+            ->orderBy('month_num')
+            ->get()
+            ->pluck('count', 'month_name')
             ->mapWithKeys(function ($count, $month) {
                 return [substr($month, 0, 3) => $count];
             })
             ->toArray();
+
         $allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $monthlyTrend = array_merge(array_fill_keys($allMonths, 0), $monthlyTrend);
 
-        // Monthly revenue trend: Sum of membership_fee for paid members
-        $revenueTrend = Member::selectRaw('MONTHNAME(created_at) as month, SUM(membership_fee) as total')
+        // ✅ Monthly revenue trend: Sum of membership_fee for paid members
+        $revenueTrend = Member::selectRaw('MONTH(created_at) as month_num, MONTHNAME(created_at) as month_name, SUM(membership_fee) as total')
             ->where('payment_status', 'paid')
             ->whereYear('created_at', $today->year)
-            ->groupBy('month')
-            ->orderByRaw('MONTH(created_at)')
-            ->pluck('total', 'month')
+            ->groupBy('month_num', 'month_name')
+            ->orderBy('month_num')
+            ->get()
+            ->pluck('total', 'month_name')
             ->mapWithKeys(function ($total, $month) {
                 return [substr($month, 0, 3) => round((float)$total, 2)];
             })
             ->toArray();
+
         $revenueTrend = array_merge(array_fill_keys($allMonths, 0), $revenueTrend);
 
         return Inertia::render('Dashboard', [
@@ -92,6 +96,7 @@ class MembersController extends Controller
             'flash' => session('flash', []),
         ]);
     }
+
 
 
     /**
